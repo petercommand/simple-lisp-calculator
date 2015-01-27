@@ -205,6 +205,11 @@ int eval(lisp_list* list, lisp_list** end, int level){
   if(list->data->cmd_type != OPERATOR){
     throw_error(list->line_start, list->cursor_start, "Not an operator");
   }
+  for(lisp_list* i = list;i != NULL;i = i->next){
+    if(i != NULL && i->next != NULL && i->data->cmd_type == SEPARATOR && i->n == 1){
+      throw_error(i->next->line_start, i->next->cursor_start, "Unexpected input");
+    }
+  }
   app_elem elem;
   memset(&elem, 0, sizeof(elem));
   lisp_list* head = list;
