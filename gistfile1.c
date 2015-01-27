@@ -4,7 +4,8 @@
 
 enum {
   OPERATOR,
-  NUMERAL
+  NUMERAL,
+  SEPARATOR
 };
 enum {
   TOP_LEVEL,
@@ -109,6 +110,20 @@ lisp_list* lexer(char* input){
       else{
 	paren_num--;
       }
+      list_pointer = (lisp_list *)malloc(sizeof(lisp_list));
+      memset(list_pointer, 0, sizeof(lisp_list));
+      list_pointer->priv = head;
+      list_pointer->next = NULL;
+      list_pointer->cursor_start = cursor;
+      list_pointer->line_start = line;
+      cmd* result = (cmd *)malloc(sizeof(cmd));
+      result->cmd_type = SEPARATOR;
+      list_pointer->data = result;
+      list_pointer->line_end = line;
+      list_pointer->cursor_end = cursor;
+      list_pointer->n = paren_num + 1;
+      head->next = list_pointer;
+      head = head->next;
       input++;
       cursor++;
     }
@@ -197,17 +212,24 @@ int eval(lisp_list* list, lisp_list** end, int level){
   lisp_list* tail = list;
   int current_n = head->n;
   cmd temp;
-  while(tail != NULL && tail->n >= current_n){
+  while(tail != NULL && tail->n >= current_n && !(tail->data->cmd_type == SEPARATOR && tail->n == current_n)){
+    tail = tail->next;
+  }
+  if(level == TOP_LEVEL && (tail != NULL && tail->data->cmd_type != SEPARATOR)){
+    throw_error(tail->line_start, tail->cursor_start, "Failed to parse input");
+  }
+  if(tail->data->cmd_type == SEPARATOR){
     tail = tail->next;
   }
   *end = tail;
-  if(level == TOP_LEVEL && tail != NULL){
-    throw_error(tail->line_start, tail->cursor_start, "Failed to parse input");
-  }
   int terminate = 0;
   while(head != NULL && (head != tail || terminate)){
     if(head == tail){
       terminate = 1;
+    }
+    if(head->data->cmd_type == SEPARATOR){
+      head = head->next;
+      continue;
     }
     if(head->n > current_n){
       temp.cmd_type = NUMERAL;
