@@ -277,7 +277,6 @@ int main(){
     free(list);
     list = temp;
   }
-  memset(input, 0, sizeof(input));
   printf("%d\n", result);
   free(input);
   return 0;
